@@ -30,7 +30,7 @@ streamlit run src/app.py --server.headless true
 ## 📁 Structure
 
 ```bash
-StreamlitApp25_20250005_KHARFALLAH_BDML2/
+PowerFlow/
 ├── data/                                       
 │   ├── processed/
 │   │   └── processed-imports-exports.csv       # Processed dataset
