@@ -2,7 +2,8 @@
 
 A **Streamlit** data-storytelling application to analyze France’s cross-border electricity exchanges.
 
-**🗃️  Public repository** : [https://github.com/GibrilKharfallah/PowerFlow.git](https://github.com/GibrilKharfallah/PowerFlow.git)
+
+**☁️ Deployed App URL** : [https://powerflow.streamlit.app/](https://powerflow.streamlit.app/)
 
 ## 🚀 Run the Application
 
