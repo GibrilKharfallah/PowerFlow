@@ -1,6 +1,8 @@
-# ⚡ PowerFlow — France Cross-Border Electricity Explorer
+# ⚡ Streamlit — France Electricity Imports & Exports
 
 A **Streamlit** data-storytelling application to analyze France’s cross-border electricity exchanges.
+
+**🗃️  Public repository** : [https://github.com/GibrilKharfallah/PowerFlow.git](https://github.com/GibrilKharfallah/PowerFlow.git)
 
 ## 🚀 Run the Application
 
@@ -30,7 +32,7 @@ streamlit run src/app.py --server.headless true
 ## 📁 Structure
 
 ```bash
-PowerFlow/
+StreamlitApp25_20250005_GibrilKHARFALLAH_BDML2/
 ├── data/                                       
 │   ├── processed/
 │   │   └── processed-imports-exports.csv       # Processed dataset

@@ -194,7 +194,7 @@ net_total = agg["net_total"].sum() if "net_total" in agg.columns else np.nan
 # ======================
 # === Tabs UI ==========
 # ======================
-tab_dash, tab_adv, tab_meth = st.tabs(["📈 Dashboard", "🔎 Advanced Analytics", "🧭 Methodology"])
+tab_dash, tab_adv, tab_geo, tab_meth = st.tabs(["📈 Dashboard", "🔎 Advanced Analytics", "🗺️ Geo Flows", "🧭 Methodology"])
 
 
 # ----------------------
@@ -544,6 +544,196 @@ with tab_adv:
 
     These dates are prime candidates for **deep-dive investigations**, for example by cross-checking weather conditions, market prices or major grid events.
     """)
+
+# ----------------------
+# 🗺️ Geo Flows (Maps)
+# ----------------------
+with tab_geo:
+    st.subheader("Geo View — France as a Regional Power Hub")
+
+    geo_base = df_f.copy()
+
+    partner_cols = [
+        c for c in geo_base.columns
+        if c.startswith("net_") and c not in ("net_total",)
+    ]
+
+    iso_map = {
+        "GBR": "GBR",
+        "CHE": "CHE",
+        "ITA": "ITA",
+        "ESP": "ESP",
+    }
+
+    if partner_cols:
+        # --------------------------
+        # Map 1 — Annual net balance per year
+        # --------------------------
+        yearly = (
+            geo_base
+            .groupby("year")[partner_cols]
+            .sum()
+            .reset_index()
+        )
+
+        yearly_long = (
+            yearly
+            .melt(id_vars="year", var_name="Partner_raw", value_name="MWh")
+        )
+
+        # net_GBR -> GBR
+        yearly_long["Partner"] = yearly_long["Partner_raw"].str.replace("net_", "", regex=False)
+
+        yearly_long = yearly_long[yearly_long["Partner"].isin(iso_map.keys())].copy()
+        yearly_long["iso_code"] = yearly_long["Partner"].map(iso_map)
+
+        yearly_long["Status"] = np.where(
+            yearly_long["MWh"] >= 0,
+            "Net exporter",
+            "Net importer"
+        )
+
+        fig_geo_year = px.choropleth(
+            yearly_long,
+            locations="iso_code",
+            color="MWh",
+            hover_name="Partner",
+            hover_data={"year": True, "Status": True, "iso_code": False},
+            animation_frame="year",
+            projection="natural earth",
+            title="Net Cross-Border Balance by Partner (Yearly View)",
+        )
+
+        fig_geo_year.update_layout(
+            title_font=dict(size=26),
+            margin=dict(l=0, r=0, t=60, b=0)
+        )
+
+        st.plotly_chart(fig_geo_year, use_container_width=True)
+
+        st.markdown(
+            """
+            **Analysis — Yearly Net Balance by Neighbour**  
+            This map shows, year by year, whether France is a **net exporter** or **net importer**
+            vis-à-vis each neighbouring country.
+
+            - Countries in **positive shades** are **net buyers** of French electricity in that year.  
+            - Countries in **negative shades** are **net suppliers** to France, reflecting periods of **import dependence**.  
+            - Sliding through the years reveals how these relationships evolve, especially around **stress episodes**
+                like the 2021 - 2022 nuclear outages.
+
+            It turns the time series into a **geographical narrative**:
+            *“In a given year, who relies on whom?”*
+            """
+        )
+
+        st.markdown("---")
+
+        # --------------------------
+        # MAp 2 — Net position over the selected period
+        # --------------------------
+        total_net = (
+            geo_base[partner_cols]
+            .sum()
+            .reset_index()
+        )
+        total_net.columns = ["Partner_raw", "MWh"]
+        total_net["Partner"] = total_net["Partner_raw"].str.replace("net_", "", regex=False)
+
+        total_net = total_net[total_net["Partner"].isin(iso_map.keys())].copy()
+        total_net["iso_code"] = total_net["Partner"].map(iso_map)
+        total_net["Status"] = np.where(
+            total_net["MWh"] >= 0,
+            "Net exporter (over selected period)",
+            "Net importer (over selected period)"
+        )
+
+        fig_geo_total = px.choropleth(
+            total_net,
+            locations="iso_code",
+            color="MWh",
+            hover_name="Partner",
+            hover_data={"Status": True, "iso_code": False},
+            projection="natural earth",
+            title="Net Cross-Border Balance by Partner (Selected Period)",
+        )
+
+        fig_geo_total.update_layout(
+            title_font=dict(size=26),
+            margin=dict(l=0, r=0, t=60, b=0)
+        )
+
+        st.plotly_chart(fig_geo_total, use_container_width=True)
+
+        st.markdown(
+            """
+            **Analysis — Net Position Over the Selected Period**  
+            Here, each country is aggregated over the **entire date range** chosen in the sidebar.
+
+            - Partners with **strong positive balances** are those that **consistently buy** from France
+                across the period.  
+            - Negative balances highlight borders where France has been **structurally dependent on imports**.  
+            - Comparing this map with the yearly animation helps distinguish **short-lived crises**
+              from **long-lasting structural shifts**.
+
+            This view answers:  
+            *“Over the whole period I'm looking at, who is France really exporting to, and who is it relying on?”*
+            """
+        )
+
+        st.markdown("---")
+
+        # --------------------------
+        # Map 3 — Structural intensity (absolute flows)
+        # --------------------------
+        total_abs = (
+            geo_base[partner_cols]
+            .abs()
+            .sum()
+            .reset_index()
+        )
+        total_abs.columns = ["Partner_raw", "Abs_MWh"]
+        total_abs["Partner"] = total_abs["Partner_raw"].str.replace("net_", "", regex=False)
+
+        total_abs = total_abs[total_abs["Partner"].isin(iso_map.keys())].copy()
+        total_abs["iso_code"] = total_abs["Partner"].map(iso_map)
+
+        fig_geo_intensity = px.choropleth(
+            total_abs,
+            locations="iso_code",
+            color="Abs_MWh",
+            hover_name="Partner",
+            projection="natural earth",
+            title="Structural Intensity of Cross-Border Exchanges (Selected Period)",
+        )
+
+        fig_geo_intensity.update_layout(
+            title_font=dict(size=26),
+            margin=dict(l=0, r=0, t=60, b=0)
+        )
+
+        st.plotly_chart(fig_geo_intensity, use_container_width=True)
+
+        st.markdown(
+            """
+            **Analysis — Structural Intensity of Exchanges**  
+            This third map ignores the **sign** of the flows and focuses on their **absolute volume**.
+
+            - Darker shades indicate borders with **high structural exposure** — large volumes traded
+                in both export and import directions.  
+            - Lighter countries correspond to **second-order borders**, which matter less for France’s
+                overall external balancing.  
+
+            Together, the three maps tell a coherent story:
+
+            - The **yearly map** captures the *trajectory* of each relationship over time.  
+            - The **net position map** summarises **who France depends on** over the selected period.  
+            - The **intensity map** highlights **which borders are systemically critical**, regardless of direction.
+            """
+        )
+
+    else:
+        st.info("No partner-level `net_*` columns available to build geographic views.")
 
 
 # ----------------------
